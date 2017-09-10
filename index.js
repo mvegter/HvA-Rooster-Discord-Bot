@@ -49,7 +49,7 @@ const ScheduleInterval = 5; // Minutes
 const NotifyInterval = 1; // Minutes
 
 var roosterData = null;
-var mainChannel = null;
+var notificationChannel = null;
 var lastFetch = null;
 
 function CheckSchedule() {
@@ -79,12 +79,10 @@ client.on('ready', () => {
 	setInterval(function() {
 		CheckSchedule();
 
-		if (mainChannel != null) {
+		if (notificationChannel != null) {
 			console.log("Checking Schedule");
 
-			var tomorrow = new Date(new Date().getTime() + 24 * 60 * 60 * 1000);
-			var vandaag = dateFormat(tomorrow, "shortDate");
-
+			var vandaag = dateFormat(new Date(), "shortDate");
 			for (var moment in roosterData) {
 				if (roosterData.hasOwnProperty(moment)) {
 					var ev = roosterData[moment];
@@ -95,13 +93,14 @@ client.on('ready', () => {
 
 					var currentIsoTime = dateFormat(Date(), "isoTime");
 					currentIsoTime = currentIsoTime.split(":");
-					var currentUnixTime = parseInt((parseInt(currentIsoTime[0] * 60 * 60)) + parseInt(((currentIsoTime[1] - 20) * 60)) + parseInt(currentIsoTime[2]));
+					var currentUnixTime = parseInt((parseInt(currentIsoTime[0] * 60 * 60)) + parseInt(((currentIsoTime[1]) * 60)) + parseInt(currentIsoTime[2]));
 
 					var lesIsoTime = dateFormat(ev.start, "isoTime");
 					lesIsoTime = lesIsoTime.split(":");
 					var lesUnixTime = parseInt((parseInt(lesIsoTime[0] * 60 * 60)) + parseInt((lesIsoTime[1] * 60)) + parseInt(lesIsoTime[2]));
 
-					if (lesUnixTime - currentUnixTime <= parseInt((5 * 60)) && !ev.hasBeenNotified) {
+          var timeDiff = parseInt(lesUnixTime - currentUnixTime);
+					if (timeDiff <= parseInt((5 * 60)) && timeDiff > 0 && !ev.hasBeenNotified) {
 						ev.hasBeenNotified = true;
 
 						var startTijd = dateFormat(ev.start, "isoTime");
@@ -115,7 +114,7 @@ client.on('ready', () => {
 							ev.location = "Onbekende Locatie";
 						}
 
-						mainChannel.send( "``` Volgende les : " + + startTijd + " - " + eindTijd + " || " + ev.location + " || " + ev.summary + "```");
+						notificationChannel.send("``` Volgende les : " + startTijd + " - " + eindTijd + " || " + ev.location + " || " + ev.summary + "```");
 					}
 				}
 			}
@@ -132,107 +131,135 @@ function TodayOrNext(num) {
 	return d;
 }
 
-client.on('message', message => {
-	var userMessage = message.content.toLowerCase();
+function DayToDate(userMessage)
+{
+  var dag = userMessage.replace("wat hebben we ", "");
+      dag = dag.replace("welke lessen hebben we ", "");
+      dag = dag.replace('!rooster ', '')
+      dag = dag.replace("?", "")
+      dag = dag.replace(' ', '');
 
-	if (message.content == '!rooster notification') {
-		mainChannel = message.channel;
+  switch (dag) {
+    case "maandag":
+      userMessage = "!rooster " + dateFormat(TodayOrNext(1), "d-m-yy");
+      break;
+    case "dinsdag":
+      userMessage = "!rooster " + dateFormat(TodayOrNext(2), "d-m-yy");
+      break;
+    case "woensdag":
+      userMessage = "!rooster " + dateFormat(TodayOrNext(3), "d-m-yy");
+      break;
+    case "donderdag":
+      userMessage = "!rooster " + dateFormat(TodayOrNext(4), "d-m-yy");
+      break;
+    case "vrijdag":
+      userMessage = "!rooster " + dateFormat(TodayOrNext(5), "d-m-yy");
+      break;
+    case "zaterdag":
+      userMessage = "!rooster " + dateFormat(TodayOrNext(6), "d-m-yy");
+      break;
+    case "zondag":
+      userMessage = "!rooster " + dateFormat(TodayOrNext(0), "d-m-yy");
+      break;
+    default:
+      userMessage = "!rooster";
+      break;
+  }
+
+  return userMessage;
+}
+
+client.on('message', messageObject => {
+	var userMessage = messageObject.content.toLowerCase();
+	var userChannel = messageObject.channel;
+  var userObject = messageObject.author;
+
+	if (!userMessage.startsWith('!rooster') && !userMessage.startsWith("wat hebben we") && !userMessage.startsWith("welke lessen hebben we")) {
+		return;
 	}
 
-	if (message.content == '!help') {
-		message.channel.send(
+  console.log(userObject.username + ' (' + userObject.id + '): ' + messageObject.content);
+
+	if (userMessage == '!rooster help') {
+		return userChannel.send(
 			"``` !rooster ```" +
 			"``` !rooster morgen ```" +
 			"``` !rooster (dag-maand-jaar) ```");
 	}
 
-	if (userMessage.startsWith("wat hebben we") || userMessage.startsWith("welke lessen hebben we")) {
-		var dag = userMessage.replace("wat hebben we ", "").replace("welke lessen hebben we ", "").replace("?", "");
+	if (userMessage == '!rooster setchannel') {
+		notificationChannel = userChannel;
+		console.log("Set Notification Channel to: " + userChannel.toString());
+		return userChannel.send('``` Rooster Notificatie Kanaal: "' + userChannel.toString() + '" ```');
+	}
 
-		switch (dag) {
-			case "maandag":
-				userMessage = "!rooster " + dateFormat(TodayOrNext(1), "d-m-yy");
-				break;
-			case "dinsdag":
-				userMessage = "!rooster " + dateFormat(TodayOrNext(2), "d-m-yy");
-				break;
-			case "woensdag":
-				userMessage = "!rooster " + dateFormat(TodayOrNext(3), "d-m-yy");
-				break;
-			case "donderdag":
-				userMessage = "!rooster " + dateFormat(TodayOrNext(4), "d-m-yy");
-				break;
-			case "vrijdag":
-				userMessage = "!rooster " + dateFormat(TodayOrNext(5), "d-m-yy");
-				break;
-			case "zaterdag":
-				userMessage = "!rooster " + dateFormat(TodayOrNext(6), "d-m-yy");
-				break;
-			case "zondag":
-				userMessage = "!rooster " + dateFormat(TodayOrNext(0), "d-m-yy");
-				break;
-			default:
-				userMessage = "!rooster";
-				break;
+	if (userMessage.startsWith("wat hebben we") || userMessage.startsWith("welke lessen hebben we")) {
+    userMessage = DayToDate(userMessage);
+	}
+
+	var response = "";
+	var vandaag = dateFormat(new Date(), "shortDate");
+	var morgen = dateFormat(new Date(new Date().getTime() + 24 * 60 * 60 * 1000), "shortDate");
+
+	for (var moment in roosterData) {
+		if (roosterData.hasOwnProperty(moment)) {
+			var ev = roosterData[moment];
+
+			if (userMessage == "!rooster" || userMessage.indexOf("vandaag") > -1) {
+				if (dateFormat(ev.start, "shortDate") != vandaag) {
+					continue;
+				}
+			} else if (userMessage.indexOf("morgen") > -1) {
+				if (dateFormat(ev.start, "shortDate") != morgen) {
+					continue;
+				}
+			} else if (userMessage.split(" ").length == 2) {
+        var identifier = userMessage.split(" ")[1];
+        if(!identifier.match("([1-9]|[012][1-9])-([1-9]|[012][012]|0[1-9])-(1[78]|201[78])") && !identifier.match("maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag"))
+        {
+          return userChannel.send('Invalid Date given');
+        }
+
+        if(identifier.match("maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag"))
+        {
+          console.log("match");
+          userMessage = DayToDate(userMessage);
+          console.log(userMessage);
+        }
+
+				var userDate = userMessage.substring(userMessage.indexOf(" ") + 1);
+
+				var day = userDate.split("-")[0];
+				var month = userDate.split("-")[1];
+				var year = userDate.split("-")[2];
+
+				var userDate = "" + month + "-" + day + "-" + year + "";
+
+				if (dateFormat(ev.start, "shortDate") != dateFormat(userDate, "shortDate")) {
+					continue;
+				}
+			} else {
+				continue;
+			}
+
+			var startTijd = dateFormat(ev.start, "isoTime");
+			var eindTijd = dateFormat(ev.end, "isoTime");
+
+			if (ev.summary == undefined || startTijd == eindTijd) {
+				continue;
+			}
+
+			if (ev.location == "" || ev.location == null) {
+				ev.location = "Onbekende Locatie";
+			}
+
+			response += "```" + startTijd + " - " + eindTijd + " || " + ev.location + " || " + ev.summary + "```";
 		}
 	}
-
-	if (userMessage.startsWith("!rooster")) {
-		ical.fromURL("http://rooster.hva.nl/ical?59b29cf8&group=false&deduplicate=true&eu=dmVndGVybQ==&h=4T4PjWb2PaBj8giw29sfeXptd3zWjqk55KhUQw6Yb6U=", {}, function(err, data) {
-			var response = "";
-			var vandaag = dateFormat(new Date(), "shortDate");
-
-			var tomorrow = new Date(new Date().getTime() + 24 * 60 * 60 * 1000);
-			var morgen = dateFormat(tomorrow, "shortDate");
-
-			for (var moment in data) {
-				if (data.hasOwnProperty(moment)) {
-					var ev = data[moment];
-
-					if (userMessage == "!rooster" || userMessage.indexOf("vandaag") > -1) {
-						if (dateFormat(ev.start, "shortDate") != vandaag) {
-							continue;
-						}
-					} else if (userMessage.indexOf("morgen") > -1) {
-						if (dateFormat(ev.start, "shortDate") != morgen) {
-							continue;
-						}
-					} else if (userMessage.split(" ").length > 1) {
-						var userDate = userMessage.substring(userMessage.indexOf(" ") + 1);
-
-						var day = userDate.split("-")[0];
-						var month = userDate.split("-")[1];
-						var year = userDate.split("-")[2];
-
-						var userDate = "" + month + "-" + day + "-" + year + "";
-
-						if (dateFormat(ev.start, "shortDate") != dateFormat(userDate, "shortDate")) {
-							continue;
-						}
-					} else {
-						continue;
-					}
-
-					var startTijd = dateFormat(ev.start, "isoTime");
-					var eindTijd = dateFormat(ev.end, "isoTime");
-
-					if (ev.summary == undefined || startTijd == eindTijd) {
-						continue;
-					}
-
-					if (ev.location == "" || ev.location == null) {
-						ev.location = "Onbekende Locatie";
-					}
-
-					response += "```" + startTijd + " - " + eindTijd + " || " + ev.location + " || " + ev.summary + "```";
-				}
-			}
-			if (response == "") {
-				response = "``` Helemaal niks op het rooster :) ```"
-			}
-			message.channel.send(response);
-		});
+	if (response == "") {
+		response = "``` Helemaal niks op het rooster :) ```"
 	}
+	userChannel.send(response);
 });
 
 client.login('BOT TOKEN');
