@@ -188,9 +188,14 @@ client.on('message', messageObject => {
 	}
 
 	if (userMessage == '!rooster setchannel') {
+		if(messageObject.member.roles.find("name", "Admin") == null)
+		{
+			return messageObject.reply("You are not authorized to perform this action!");
+		}
+
 		notificationChannel = userChannel;
-		console.log("Set Notification Channel to: " + userChannel.toString());
-		return userChannel.send('``` Rooster Notificatie Kanaal: "' + userChannel.toString() + '" ```');
+		console.log("Set Notification Channel to: " + userChannel.name);
+		return userChannel.send('``` Rooster Notificatie Kanaal: "' + userChannel.name + '" ```');
 	}
 
 	if (userMessage.startsWith("wat hebben we") || userMessage.startsWith("welke lessen hebben we")) {
@@ -242,8 +247,8 @@ client.on('message', messageObject => {
 				continue;
 			}
 
-			var startTijd = dateFormat(ev.start, "isoTime");
-			var eindTijd = dateFormat(ev.end, "isoTime");
+			var startTijd = dateFormat(ev.start, "HH:MM");
+			var eindTijd = dateFormat(ev.end, "HH:MM");
 
 			if (ev.summary == undefined || startTijd == eindTijd) {
 				continue;
@@ -253,7 +258,7 @@ client.on('message', messageObject => {
 				ev.location = "Onbekende Locatie";
 			}
 
-			response += "```" + startTijd + " - " + eindTijd + " || " + ev.location + " || " + ev.summary + "```";
+			response += "```" + startTijd + " - " + eindTijd + " | " + ev.location + " | " + ev.summary + "```";
 		}
 	}
 	if (response == "") {
