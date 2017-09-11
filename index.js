@@ -104,10 +104,14 @@ client.on('ready', () => {
 
           var timeDiff = parseInt(lesUnixTime - currentUnixTime);
 					if (((timeDiff <= parseInt((NotifityIntervalFirst * 60)) && !ev.hasBeenNotifiedFirst) || (timeDiff <= parseInt(NotifityIntervalSecond * 60) && !ev.hasBeenNotifiedSecond)) && timeDiff > 0) {
-						if(!ev.hasBeenNotifiedFirst && !ev.hasBeenNotifiedSecond) {
+						console.log(timeDiff + " | " + NotifityIntervalFirst * 60 + " of " + NotifityIntervalSecond * 60);
+
+						if(!ev.hasBeenNotifiedFirst) {
 							ev.hasBeenNotifiedFirst = true;
-						} else if (ev.hasBeenNotifiedFirst && !ev.hasBeenNotifiedSecond) {
+						} else if (!ev.hasBeenNotifiedSecond) {
 							ev.hasBeenNotifiedSecond = true;
+						} else if(ev.hasBeenNotifiedFirst && ev.hasBeenNotifiedSecond) {
+							continue;
 						}
 
 						var startTijd = dateFormat(ev.start, "HH:MM");
