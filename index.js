@@ -194,15 +194,42 @@ client.on('message', messageObject => {
 			"``` !rooster (dag-maand-jaar) ```");
 	}
 
-	if (userMessage == '!rooster setchannel') {
+	if (userMessage.startsWith('!rooster setchannel')) {
 		if(messageObject.member.roles.find("name", "Admin") == null)
 		{
 			return messageObject.reply("You are not authorized to perform this action!");
 		}
 
-		notificationChannel = userChannel;
-		console.log("Set Notification Channel to: " + userChannel.name);
-		return userChannel.send('``` Rooster Notificatie Kanaal: "' + userChannel.name + '" ```');
+		if(userMessage.split(" ").length == 2) {
+			notificationChannel = userChannel;
+			console.log("Set Notification Channel to: " + userChannel.name);
+		} else if (userMessage.split(" ").length == 3)
+		{
+			var server = client.guilds.find("name", "TI102");
+			var channel = server.channels.find("name", userMessage.split(" ")[2]);
+			if(channel == null)
+			{
+				return messageObject.reply("Couldn't find channel with name: " + userMessage.split(" ")[2]);
+			}
+			console.log("Set Notification Channel to: " + channel.name);
+			notificationChannel = channel;
+		}
+
+		return userChannel.send('``` Rooster Notificatie Kanaal: "' + notificationChannel.name + '" ```');
+	}
+
+	if(userMessage.startsWith("!rooster notify"))
+	{
+		if(messageObject.member.roles.find("name", "Admin") == null)
+		{
+			return messageObject.reply("You are not authorized to perform this action!");
+		}
+		if(userMessage.split(" ")[2] == null)
+		{
+				return messageObject.reply("Invalid format, use: !rooster notify '(message)'");
+		}
+
+		return notificationChannel.send("``` " + userMessage.split(" ")[2] + "```");
 	}
 
 	if (userMessage.startsWith('!rooster setnotify')) {
