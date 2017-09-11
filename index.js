@@ -103,7 +103,7 @@ client.on('ready', () => {
 					var lesUnixTime = parseInt((parseInt(lesIsoTime[0] * 60 * 60)) + parseInt((lesIsoTime[1] * 60)) + parseInt(lesIsoTime[2]));
 
           var timeDiff = parseInt(lesUnixTime - currentUnixTime);
-					if ( (timeDiff <= parseInt((NotifityIntervalFirst * 60)) && !ev.hasBeenNotifiedFirst) || (timeDiff <= parseInt(NotifityIntervalSecond * 60) && !ev.hasBeenNotifiedSecond)) {
+					if (((timeDiff <= parseInt((NotifityIntervalFirst * 60)) && !ev.hasBeenNotifiedFirst) || (timeDiff <= parseInt(NotifityIntervalSecond * 60) && !ev.hasBeenNotifiedSecond)) && timeDiff > 0) {
 						if(!ev.hasBeenNotifiedFirst && !ev.hasBeenNotifiedSecond) {
 							ev.hasBeenNotifiedFirst = true;
 						} else if (ev.hasBeenNotifiedFirst && !ev.hasBeenNotifiedSecond) {
