@@ -110,8 +110,8 @@ client.on('ready', () => {
 							ev.hasBeenNotifiedSecond = true;
 						}
 
-						var startTijd = dateFormat(ev.start, "isoTime");
-						var eindTijd = dateFormat(ev.end, "isoTime");
+						var startTijd = dateFormat(ev.start, "HH:MM");
+						var eindTijd = dateFormat(ev.end, "HH:MM");
 
 						if (ev.summary == undefined || startTijd == eindTijd) {
 							continue;
