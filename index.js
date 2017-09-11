@@ -45,8 +45,11 @@ const dateFormat = require('dateformat');
 const client = new Discord.Client();
 
 const ICalLink = "http://rooster.hva.nl/ical?59b29cf8&group=false&deduplicate=true&eu=dmVndGVybQ==&h=4T4PjWb2PaBj8giw29sfeXptd3zWjqk55KhUQw6Yb6U=";
+
 const ScheduleInterval = 5; // Minutes
-const NotifyInterval = 1; // Minutes
+
+var NotifityIntervalFirst = 30;
+var NotifityIntervalSecond = 5;
 
 var roosterData = null;
 var notificationChannel = null;
@@ -100,8 +103,12 @@ client.on('ready', () => {
 					var lesUnixTime = parseInt((parseInt(lesIsoTime[0] * 60 * 60)) + parseInt((lesIsoTime[1] * 60)) + parseInt(lesIsoTime[2]));
 
           var timeDiff = parseInt(lesUnixTime - currentUnixTime);
-					if (timeDiff <= parseInt((5 * 60)) && timeDiff > 0 && !ev.hasBeenNotified) {
-						ev.hasBeenNotified = true;
+					if ( (timeDiff <= parseInt((NotifityIntervalFirst * 60)) && !ev.hasBeenNotifiedFirst) || (timeDiff <= parseInt(NotifityIntervalSecond * 60) && !ev.hasBeenNotifiedSecond)) {
+						if(!ev.hasBeenNotifiedFirst && !ev.hasBeenNotifiedSecond) {
+							ev.hasBeenNotifiedFirst = true;
+						} else if (ev.hasBeenNotifiedFirst && !ev.hasBeenNotifiedSecond) {
+							ev.hasBeenNotifiedSecond = true;
+						}
 
 						var startTijd = dateFormat(ev.start, "isoTime");
 						var eindTijd = dateFormat(ev.end, "isoTime");
@@ -114,7 +121,7 @@ client.on('ready', () => {
 							ev.location = "Onbekende Locatie";
 						}
 
-						notificationChannel.send("``` Volgende les : " + startTijd + " - " + eindTijd + " || " + ev.location + " || " + ev.summary + "```");
+						notificationChannel.send("``` Volgende les : " + startTijd + " - " + eindTijd + " | " + ev.location + " | " + ev.summary + "```");
 					}
 				}
 			}
@@ -122,7 +129,7 @@ client.on('ready', () => {
 			console.log("No Main Channel Set!");
 		}
 
-	}, NotifyInterval * 60 * 1000)
+	}, 60 * 1000)
 });
 
 function TodayOrNext(num) {
@@ -196,6 +203,23 @@ client.on('message', messageObject => {
 		notificationChannel = userChannel;
 		console.log("Set Notification Channel to: " + userChannel.name);
 		return userChannel.send('``` Rooster Notificatie Kanaal: "' + userChannel.name + '" ```');
+	}
+
+	if (userMessage.startsWith('!rooster setnotify')) {
+		if(messageObject.member.roles.find("name", "Admin") == null)
+		{
+			return messageObject.reply("You are not authorized to perform this action!");
+		}
+
+		if(userMessage.split(" ").length != 4) {
+			return messageObject.reply("Invalid operation, use: !rooster setNotify (firstNotify) (secondNotify)");
+		}
+
+		NotifityIntervalFirst = userMessage.split(" ")[2];
+		NotifityIntervalSecond = userMessage.split(" ")[3];
+
+		console.log("Set First Notify to: " + NotifityIntervalFirst + ", Second Notify: " + NotifityIntervalSecond);
+		return userChannel.send("``` Eerste Notificatie: " + NotifityIntervalFirst + " minuten, tweede Notificatie: " + NotifityIntervalSecond + ' minuten. ```');
 	}
 
 	if (userMessage.startsWith("wat hebben we") || userMessage.startsWith("welke lessen hebben we")) {
